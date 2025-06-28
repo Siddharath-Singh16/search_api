@@ -47,7 +47,7 @@ hr_system/
 
 ```bash
 git clone https://github.com/Siddharath-Singh16/search_api.git
-cd employee-search-api
+cd search_api
 
 docker build -t employee-search-api .
 docker run -p 8000:8000 employee-search-api
