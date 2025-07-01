@@ -14,7 +14,6 @@ RUN pip install --upgrade pip && \
     pip install -r requirements.txt
 
 COPY ./src ./src
-COPY ./tests ./tests
 COPY alembic alembic
 COPY alembic.ini .
 
