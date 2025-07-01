@@ -22,9 +22,6 @@ class RateLimiterMiddleware(BaseHTTPMiddleware):
 
     async def dispatch(self, request: Request, call_next):
         org_id = request.query_params.get("org_id")
-        if not org_id:
-            raise HTTPException(status_code=400, detail="org_id is required for rate limiting")
-
         now = time.time()
         
         with self._lock:
