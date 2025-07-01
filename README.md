@@ -1,6 +1,6 @@
 # 🚀 HR Employee Search Microservice
 
-A scalable and modular FastAPI-based microservice for searching employees, featuring dynamic column visibility, rate limiting, and containerized deployment.
+A scalable and modular FastAPI-based microservice for searching employees, featuring dynamic column visibility, thread-safe rate limiting, and containerized deployment.
 
 ---
 
@@ -9,7 +9,7 @@ A scalable and modular FastAPI-based microservice for searching employees, featu
 ✅ **FastAPI Microservice**
 ✅ **Search API** with filtering, pagination
 ✅ **Dynamic Columns** per organization
-✅ **Custom Rate Limiting** (20 req/min/org)
+✅ **Thread-safe Rate Limiter Middleware** (configurable requests per organization)
 ✅ **Alembic Migrations**
 ✅ **SQLite support**
 ✅ **Dockerized deployment**
@@ -31,7 +31,7 @@ A scalable and modular FastAPI-based microservice for searching employees, featu
 hr_system/
 ├── src/
 │   ├── api/               # FastAPI endpoints
-│   ├── core/              # Rate limiter logic
+│   ├── middleware/        # Rate limiter middleware
 │   ├── db/                # Session, base, seed logic
 │   ├── models/            # SQLAlchemy models
 │   ├── org_config/        # Per-org column visibility
@@ -100,6 +100,30 @@ uvicorn src.main:app --reload
 
 ---
 
+## 🔒 Rate Limiting
+
+The API implements a thread-safe rate limiting middleware with the following characteristics:
+
+- **Per-Organization Limiting**: Each organization (identified by `org_id`) has its own rate limit quota
+- **Sliding Window Algorithm**: Uses a thread-safe sliding window implementation for accurate rate tracking
+- **Configurable Parameters**: 
+  - Maximum requests per time window
+  - Time window duration in seconds
+- **429 Too Many Requests**: Returns HTTP 429 with appropriate headers when rate limit exceeded
+- **400 Bad Request**: Returns HTTP 400 if `org_id` is missing in request
+
+Example rate limit configuration (in `main.py`):
+```python
+# Apply rate limiter middleware with 20 requests per 60 seconds per organization
+app.add_middleware(
+    RateLimiterMiddleware,
+    rate_limit=20,         # Maximum requests
+    window_seconds=60      # Time window in seconds
+)
+```
+
+---
+
 ## 🪪 Running Locally
 
 ### 1. Clone & Create Environment
@@ -145,14 +169,7 @@ pytest
 
 ---
 
-## 📊 Rate Limiting
-
-* Max **20 requests/minute per org**
-* Implemented in `src/core/rate_limiter.py`
-
----
-
-## 🔐 Org-specific Column Control
+## 📊 Org-specific Column Control
 
 Dynamic field inclusion is based on org:
 
