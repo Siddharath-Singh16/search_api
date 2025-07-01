@@ -66,7 +66,7 @@ docker run -p 8000:8000 employee-search-api
 python -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
-
+alembic upgrade head
 uvicorn src.main:app --reload
 ```
 
