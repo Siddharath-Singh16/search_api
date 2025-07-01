@@ -1,37 +1,40 @@
 import time
-from collections import deque
+from collections import deque, defaultdict
 from fastapi import HTTPException
 
-RATE_LIMIT = 20
+RATE_LIMIT = 20  # requests per minute per org
 WINDOW_SECONDS = 60
 
-rate_limit_store = {}
+class RateLimiter:
+    def __init__(self, rate_limit: int = RATE_LIMIT, window_seconds: int = WINDOW_SECONDS):
+        self.rate_limit = rate_limit
+        self.window_seconds = window_seconds
+        self._store = defaultdict(deque) 
 
-def enforce_rate_limit(org_id: str):
-    now = time.time()
-    window = rate_limit_store.get(org_id, deque())
+    def enforce(self, org_id: str):
+        now = time.time()
+        window = self._store[org_id]
 
-    while window and now - window[0] > WINDOW_SECONDS:
-        window.popleft()
+        while window and now - window[0] > self.window_seconds:
+            window.popleft()
 
-    if not window:
-        rate_limit_store.pop(org_id, None)
-    else:
-        rate_limit_store[org_id] = window
+        if len(window) >= self.rate_limit:
+            raise HTTPException(status_code=429, detail="Rate limit exceeded")
 
-    if len(window) >= RATE_LIMIT:
-        raise HTTPException(status_code=429, detail="Rate limit exceeded")
+        window.append(now)
 
-    window.append(now)
-    rate_limit_store[org_id] = window
+    def cleanup(self):
+        now = time.time()
+        expired_keys = []
+        for org_id, timestamps in self._store.items():
+            while timestamps and now - timestamps[0] > self.window_seconds:
+                timestamps.popleft()
+            if not timestamps:
+                expired_keys.append(org_id)
+        for org_id in expired_keys:
+            del self._store[org_id]
 
-def cleanup_rate_limit_store():
-    now = time.time()
-    expired_keys = []
-    for org_id, timestamps in rate_limit_store.items():
-        while timestamps and now - timestamps[0] > WINDOW_SECONDS:
-            timestamps.popleft()
-        if not timestamps:
-            expired_keys.append(org_id)
-    for org_id in expired_keys:
-        rate_limit_store.pop(org_id, None)
+    def reset(self):
+        self._store.clear()
+
+rate_limiter = RateLimiter()

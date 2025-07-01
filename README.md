@@ -1,41 +1,48 @@
-# 🧾 Employee Search Microservice
+# 🚀 HR Employee Search Microservice
 
-A high-performance, configurable microservice for an HR company to search employees across millions of records efficiently, with per-organization column visibility and built-in rate limiting. Built using **FastAPI**, **SQLite**, and Python's **standard library only**.
-
----
-
-## 🚀 Features
-
-- 🔎 **Search API** for employee directory
-- 🏢 **Dynamic columns per organization** (configurable output fields)
-- ⚡ **Efficient pagination & filtering**
-- 🛡 **In-memory rate limiting** (no 3rd-party lib used)
-- 🧪 **Unit tested** using `pytest`
-- 📦 **Containerized** via Docker
-- 📄 **OpenAPI compliant**
+A scalable and modular FastAPI-based microservice for searching employees, featuring dynamic column visibility, rate limiting, and containerized deployment.
 
 ---
 
-## 📁 Folder Structure
+## 📁 Features
+
+✅ **FastAPI Microservice**
+✅ **Search API** with filtering, pagination
+✅ **Dynamic Columns** per organization
+✅ **Custom Rate Limiting** (20 req/min/org)
+✅ **Alembic Migrations**
+✅ **SQLite support**
+✅ **Dockerized deployment**
+✅ **Unit Tests with Pytest**
+
+---
+
+## 📦 Requirements
+
+* Python 3.11+
+* Docker (optional)
+* pip (for local setup)
+
+---
+
+## 🏗️ Project Structure
 
 ```
 hr_system/
 ├── src/
-│   ├── api/
-│   │   └── routes.py
-│   ├── core/
-│   │   └── rate_limiter.py
-|   |   └──config.json
-│   ├── db/
-│   │   ├── sqlite.py
-│   └── main.py
-├── tests/
-    ├──conftest.py
-│   ├── test_api.py
-│   └── test_rate_limiter.py
-├
+│   ├── api/               # FastAPI endpoints
+│   ├── core/              # Rate limiter logic
+│   ├── db/                # Session, base, seed logic
+│   ├── models/            # SQLAlchemy models
+│   ├── org_config/        # Per-org column visibility
+│   ├── schemas/           # Pydantic models
+│   ├── services/          # Business logic
+│   └── main.py            # App entry point
+├── alembic/               # Alembic migrations
+├── tests/                 # Pytest tests
 ├── Dockerfile
 ├── requirements.txt
+├── alembic.ini
 └── README.md
 ```
 
@@ -69,62 +76,63 @@ uvicorn src.main:app --reload
 
 ### `GET /search/employees`
 
-Search for employees within an organization.
+### ✅ Query Parameters:
 
-#### Query Parameters
+| Name    | Type   | Required | Description                    |
+| ------- | ------ | -------- | ------------------------------ |
+| org\_id | string | ✅        | Organization ID (e.g., org1)   |
+| search  | string | ❌        | Text search                    |
+| status  | string | ❌        | Employee status (e.g., ACTIVE) |
+| page    | int    | ❌        | Page number (default = 1)      |
+| limit   | int    | ❌        | Page size (default = 10)       |
 
-| Param     | Type   | Description                         |
-|-----------|--------|-------------------------------------|
-| `org_id`  | string | **Required**. Organization ID       |
-| `search`  | string | Search term (name, position, etc)   |
-| `status`  | string | Filter by status (e.g., active)     |
-| `page`    | int    | Page number (default 1)             |
-| `limit`   | int    | Page size (default 10)              |
-
-#### Example
-
-```bash
-curl "http://localhost:8000/search/employees?org_id=org1&search=engineer&page=1&limit=10"
-```
-
-#### Sample Response
+### 🔄 Response (Dynamic Fields):
 
 ```json
 [
   {
     "first_name": "John",
     "last_name": "Doe",
-    "department": "Engineering",
-    "position": "Developer"
+    "department": "Engineering"
   }
 ]
 ```
 
 ---
 
-## 🧠 Organization Configuration
+## 🪪 Running Locally
 
-Dynamic fields are defined in `org_config.json`. Example:
+### 1. Clone & Create Environment
 
-```json
-{
-  "org1": ["first_name", "last_name", "department", "position"],
-  "org2": ["first_name", "location", "status"]
-}
+```bash
+git clone https://github.com/Siddharath-Singh16/search_api.git
+cd hr-system
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
 ```
+
+### 2. Apply DB Migrations
+
+```bash
+alembic upgrade head
+```
+
+### 3. Start Server
+
+```bash
+uvicorn src.main:app --reload
+```
+
+Visit: http://localhost:8000/docs
 
 ---
 
-## 📊 Rate Limiting
+## 💪 Running with Docker
 
-- **20 requests/minute per organization**
-- Implemented using `collections.deque` (no third-party libraries)
-- Error response:
-
-```json
-{
-  "detail": "Rate limit exceeded"
-}
+```bash
+docker build -t employee-search-api .
+docker run -p 8000:8000 employee-search-api
 ```
 
 ---
@@ -132,31 +140,39 @@ Dynamic fields are defined in `org_config.json`. Example:
 ## 🧪 Running Tests
 
 ```bash
-export PYTHONPATH=.
 pytest
 ```
 
-Test coverage includes:
-- ✅ API functionality
-- ✅ Rate limiter logic
-- ✅ Edge cases
+---
+
+## ⚙️ Rate Limiting
+
+* Max **20 requests/minute per org**
+* Implemented in `src/core/rate_limiter.py`
 
 ---
 
-## 📦 OpenAPI Docs
+## 🔐 Org-specific Column Control
 
-Once the server is running, visit:
+Dynamic field inclusion is based on org:
 
-- Docs: [http://localhost:8000/docs](http://localhost:8000/docs)
-- JSON schema: [http://localhost:8000/openapi.json](http://localhost:8000/openapi.json)
+```python
+ORG_COLUMN_CONFIG = {
+  "org1": ["first_name", "last_name", "department"],
+  "org2": ["first_name", "department", "position", "status"]
+}
+```
+
+Controlled via `src/org_config/column_config.py`.
 
 ---
 
+## 📜 Migrations
 
-## 📌 Notes
+Run migrations via:
 
-- DB is seeded at startup.
-- Designed for containerized deployment.
-- Ready for enterprise scaling with persistent RDBMS (e.g., PostgreSQL).
+```bash
+alembic upgrade head
+```
 
 ---
