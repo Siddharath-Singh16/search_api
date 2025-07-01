@@ -145,7 +145,7 @@ pytest
 
 ---
 
-## ⚙️ Rate Limiting
+## 📊 Rate Limiting
 
 * Max **20 requests/minute per org**
 * Implemented in `src/core/rate_limiter.py`
@@ -164,6 +164,24 @@ ORG_COLUMN_CONFIG = {
 ```
 
 Controlled via `src/org_config/column_config.py`.
+
+---
+
+## 🌱 Database Seeding
+
+The database is automatically seeded with test data when the application starts in debug mode. This makes it easy to get started with testing right away.
+
+### Available Test Organizations
+
+For testing purposes, you can use the following organization IDs:
+
+* `org1` - Shows first name, last name, and department columns
+* `org2` - Shows first name, department, position, and status columns
+
+Example API call:
+```bash
+curl "http://localhost:8000/search/employees?org_id=org1"
+```
 
 ---
 
